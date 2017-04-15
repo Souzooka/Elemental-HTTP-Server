@@ -28,9 +28,10 @@ const server = http.createServer( (req, res) => {
     return fs.readFile(file, 'utf8', (err, data) => {
       if (err) {
         console.log(err);
-        return notFound();
+        notFound();
+      } else {
+        sendResponse(data);
       }
-      sendResponse(data);
     });
   }
 
