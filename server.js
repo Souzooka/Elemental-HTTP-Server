@@ -4,24 +4,7 @@ const fs = require('fs');
 const http = require('http');
 
 const headers = [];
-
 const server = http.createServer( (req, res) => {
-
-  const method = req.method;
-  let path = req.url;
-  const httpVersion = 'HTTP' + req.httpVersion;
-
-  path = 'public' + path;
-
-  if (path === 'public/') {
-    path = 'public/index.html';
-  }
-
-  let response = null;
-
-  if (method === "GET") {
-    generateResponse(path);
-  }
 
   function generateResponse(file) {
     var fileData = '';
@@ -53,6 +36,27 @@ const server = http.createServer( (req, res) => {
     });
     res.write(`${data}`);
     res.end();
+  }
+
+  const method = req.method;
+  const httpVersion = 'HTTP' + req.httpVersion;
+  let path = 'public' + req.url;
+
+  if (path === 'public/') {
+    path = 'public/index.html';
+  }
+
+  switch (method) {
+    case 'GET': {
+      generateResponse(path);
+      break;
+    }
+    case 'OPTIONS': {
+      res.writeHead(200);
+      res.write('GET, POST, PUT, DELETE, HEADERS');
+      res.end();
+      break;
+    }
   }
 });
 
