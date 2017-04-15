@@ -1,18 +1,15 @@
 /*jshint esversion:6*/
 const net = require('net');
 const fs = require('fs');
+const http = require('http');
 
 const headers = [];
 
-const server = net.createServer( (c) => {
+const server = http.createServer( (req, res) => {
 
-  c.on('data', (data) => {
-    const header = data.toString().split('\r\n');
-    const requestLine = header[0].split(' ');
-
-    const method = requestLine[0];
-    let path = requestLine[1];
-    const httpVersion = requestLine[2];
+    const method = req.method;
+    let path = req.url;
+    const httpVersion = 'HTTP' + req.httpVersion;
 
     path = 'public' + path;
 
@@ -42,21 +39,20 @@ const server = net.createServer( (c) => {
         if (err) {
           console.log(err);
         }
-        sendResponse(data, '404 NOT FOUND');
+        sendResponse(data, 404);
       });
     }
 
-    function sendResponse(data, status = '200 OK') {
-      c.write(`HTTP/1.1 ${status}
-Content-Type : text/html
-Content-Length: ${data.length}
-Date: ${new Date().toUTCString()}
-Server: HackerSpace
-
-${data}`);
-      c.end();
+    function sendResponse(data, status = 200) {
+      res.writeHead(status, {
+        'Content-Type'  : 'text/html',
+        'Content-Length': data.length,
+        'Date'          : new Date().toUTCString(),
+        'Server'        : 'HackerSpace'
+      });
+      res.write(`${data}`);
+      res.end();
     }
-  });
 });
 
 server.listen(8080);
