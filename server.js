@@ -4,7 +4,6 @@ const fs = require('fs');
 const http = require('http');
 const querystring = require('querystring');
 
-const headers = [];
 let elements = 2;
 const server = http.createServer( (req, res) => {
 
@@ -69,7 +68,6 @@ const server = http.createServer( (req, res) => {
   }
 
   function putFile(body) {
-    console.log('test')
     const fileData = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,6 +105,21 @@ const server = http.createServer( (req, res) => {
     });
   }
 
+  function deleteFile(body) {
+    console.log('test')
+    const fileName = `public/${body.elementName}.html`;
+    fs.unlink(fileName, (err) => {
+      if (err) {
+        res.writeHead(409);
+        res.write('File does not exist on server.');
+        res.end();
+      }
+      console.log('The file has been deleted!');
+      --elements;
+      readIndex('delete', body.elementName);
+    });
+  }
+
   function readIndex(method, element) {
     const fileName = `public/index.html`;
     if (method === 'add') {
@@ -115,6 +128,14 @@ const server = http.createServer( (req, res) => {
           console.log(err);
         }
         addIndexElement(data, element);
+      });
+    }
+    else if (method === 'delete') {
+      fs.readFile(fileName, 'utf8', (err, data) => {
+        if (err) {
+          console.log(err);
+        }
+        deleteIndexElement(data, element);
       });
     }
   }
@@ -137,7 +158,19 @@ const server = http.createServer( (req, res) => {
       res.write('File has been successfully saved.');
       res.end();
     });
+  }
 
+  function deleteIndexElement(data, element) {
+    data = data.toString();
+    h3Index = data.indexOf('<h3>') + 4;
+    h3EndIndex = data.indexOf('</h3>');
+    data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
+    fs.writeFile('public/index.html', data, (err) => {
+      if (err) throw err;
+      res.writeHead(200);
+      res.write('File has been successfully deleted.');
+      res.end();
+    });
   }
 
   const method = req.method;
@@ -172,6 +205,15 @@ const server = http.createServer( (req, res) => {
       }
       case 'PUT': {
         putFile(body);
+        break;
+      }
+      case 'DELETE': {
+        deleteFile(body);
+        break;
+      }
+      case 'HEADERS': {
+        res.writeHead(200);
+        res.end();
         break;
       }
       case 'OPTIONS': {
