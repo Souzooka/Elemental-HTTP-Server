@@ -5,6 +5,7 @@ const http = require('http');
 const querystring = require('querystring');
 
 const headers = [];
+let elements = 2;
 const server = http.createServer( (req, res) => {
 
   function generateGETResponse(file) {
@@ -39,8 +40,70 @@ const server = http.createServer( (req, res) => {
     res.end();
   }
 
-  function createFile(filepath, data) {
+  function postFile(body) {
+    const fileData = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Elements - ${body.elementName}</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <h1>${body.elementName}</h1>
+  <h2>${body.elementSymbol}</h2>
+  <h3>Atomic number ${body.elementAtomicNumber}</h3>
+  <p>${body.elementDescription}</p>
+  <p><a href="/">back</a></p>
+</body>
+</html>`;
+    const fileName = `public/${body.elementName}.html`;
+    fs.access(fileName, fs.constants.F_OK, (err) => {
+      if (err) {
+        writeNewFile(fileName, fileData);
+      } else {
+        res.writeHead(409);
+        res.write('File already exists on server.');
+        res.end();
+      }
+    });
+  }
 
+  function writeNewFile(fileName, fileData) {
+    fs.writeFile(fileName, fileData, (err) => {
+      if (err) throw err;
+      console.log('The file has been saved!');
+      ++elements;
+      readIndex('add', body.elementName);
+    });
+  }
+
+  function readIndex(method, element) {
+    const fileName = `public/index.html`;
+    if (method === 'add') {
+      fs.readFile(fileName, 'utf8', (err, data) => {
+        if (err) {
+          console.log(err);
+        }
+        addIndexElement(data, element);
+      });
+    }
+  }
+
+  function addIndexElement(data, element) {
+    data = data.toString();
+    endOfListIndex = data.indexOf('</ol>');
+    data = `${data.substr(0, endOfListIndex)}\
+  <li>
+      <a href="/${element}.html">${element.charAt(0).toUpperCase() + element.slice(1)}</a>
+    </li>
+    ${data.substr(endOfListIndex)}`;
+
+    h3Index = data.indexOf('<h3>') + 4;
+    h3EndIndex = data.indexOf('</h3>');
+    data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
+    res.writeHead(200);
+    res.write('File successfully saved on server.');
+    res.end();
   }
 
   const method = req.method;
@@ -70,7 +133,7 @@ const server = http.createServer( (req, res) => {
         break;
       }
       case 'POST': {
-        console.log(body);
+        postFile(body);
         break;
       }
       case 'OPTIONS': {
