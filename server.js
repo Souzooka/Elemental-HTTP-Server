@@ -45,11 +45,11 @@ const server = http.createServer( (req, res) => {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>The Elements - ${body.elementName}</title>
+  <title>The Elements - ${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <h1>${body.elementName}</h1>
+  <h1>${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</h1>
   <h2>${body.elementSymbol}</h2>
   <h3>Atomic number ${body.elementAtomicNumber}</h3>
   <p>${body.elementDescription}</p>
@@ -68,7 +68,37 @@ const server = http.createServer( (req, res) => {
     });
   }
 
+  function putFile(body) {
+    console.log('test')
+    const fileData = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Elements - ${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <h1>${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</h1>
+  <h2>${body.elementSymbol}</h2>
+  <h3>Atomic number ${body.elementAtomicNumber}</h3>
+  <p>${body.elementDescription}</p>
+  <p><a href="/">back</a></p>
+</body>
+</html>`;
+    const fileName = `public/${body.elementName}.html`;
+    fs.access(fileName, fs.constants.F_OK, (err) => {
+      if (err) {
+        res.writeHead(409);
+        res.write('File does not exist on server.');
+        res.end();
+      } else {
+        writeNewFile(fileName, fileData);
+      }
+    });
+  }
+
   function writeNewFile(fileName, fileData) {
+
     fs.writeFile(fileName, fileData, (err) => {
       if (err) throw err;
       console.log('The file has been saved!');
@@ -101,9 +131,13 @@ const server = http.createServer( (req, res) => {
     h3Index = data.indexOf('<h3>') + 4;
     h3EndIndex = data.indexOf('</h3>');
     data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
-    res.writeHead(200);
-    res.write('File successfully saved on server.');
-    res.end();
+    fs.writeFile('public/index.html', data, (err) => {
+      if (err) throw err;
+      res.writeHead(200);
+      res.write('File has been successfully saved.');
+      res.end();
+    });
+
   }
 
   const method = req.method;
@@ -134,6 +168,10 @@ const server = http.createServer( (req, res) => {
       }
       case 'POST': {
         postFile(body);
+        break;
+      }
+      case 'PUT': {
+        putFile(body);
         break;
       }
       case 'OPTIONS': {
