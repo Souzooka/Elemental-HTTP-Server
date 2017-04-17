@@ -1,4 +1,4 @@
-
+/*jshint esversion:6*/
 function requestHandler(req, res) {
   const net = require('net');
   const fs = require('fs');
