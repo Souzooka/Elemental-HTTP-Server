@@ -1,9 +1,10 @@
-function requestHandler(req, res) {
 
+function requestHandler(req, res) {
   const net = require('net');
   const fs = require('fs');
   const http = require('http');
   const querystring = require('querystring');
+  const getHandler = require('./getHandler');
   var auth = require('basic-auth');
 
   const method = req.method;
@@ -48,7 +49,7 @@ function requestHandler(req, res) {
 
     switch (method) {
       case 'GET': {
-        generateGETResponse(path);
+        getHandler(req, res);
         break;
       }
       case 'POST': {
@@ -103,7 +104,7 @@ function requestHandler(req, res) {
         });
         break;
       }
-      case 'HEADERS': {
+      case 'HEAD': {
         res.writeHead(200, {
           'Date'          : new Date().toUTCString(),
           'Server'        : 'HackerSpace'
@@ -116,7 +117,7 @@ function requestHandler(req, res) {
           'Date'          : new Date().toUTCString(),
           'Server'        : 'HackerSpace'
         });
-        res.write('GET, POST, PUT, DELETE, HEADERS');
+        res.write('GET, POST, PUT, DELETE, HEAD');
         res.end();
         break;
       }
@@ -124,33 +125,7 @@ function requestHandler(req, res) {
   });
 
 
-  function generateGETResponse(file) {
-    var fileData = '';
-    return fs.readFile(file, 'utf8', (err, data) => {
-      if (err) {
-        console.log(err);
-        fs.readFile('public/404.html', 'utf8', (err, data) => {
-          if (err) {
-            console.log(err);
-          }
-          sendGETResponse(data, 404);
-        });
-      } else {
-        sendGETResponse(data);
-      }
-    });
-  }
 
-  function sendGETResponse(data, status = 200) {
-    res.writeHead(status, {
-      'Content-Type'  : 'text/html',
-      'Content-Length': data.length,
-      'Date'          : new Date().toUTCString(),
-      'Server'        : 'HackerSpace'
-    });
-    res.write(`${data}`);
-    res.end();
-  }
 
   function writeNewFile(body) {
     const fileData = `<!DOCTYPE html>
