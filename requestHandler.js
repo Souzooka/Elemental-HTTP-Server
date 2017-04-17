@@ -4,8 +4,8 @@ function requestHandler(req, res) {
   const fs = require('fs');
   const http = require('http');
   const querystring = require('querystring');
-  const getHandler = require('./getHandler');
-  var auth = require('basic-auth');
+  const getHandler = require('./getHandler.js');
+  const basicAuth = require('./basicAuth.js');
 
   const method = req.method;
   const httpVersion = 'HTTP' + req.httpVersion;
@@ -22,30 +22,7 @@ function requestHandler(req, res) {
 
   req.on('end', () => {
     body = querystring.parse(Buffer.concat(body).toString());
-    const credentials = auth(req);
     const fileName = `public/${body.elementName}.html`;
-    if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-      if (!credentials) {
-        res.writeHead(401, {
-          'Date'          : new Date().toUTCString(),
-          'Server'        : 'HackerSpace'
-        });
-        res.write(`This server is using authentication.
-
-  Please provide a "name" and "pass" key with your requests.`);
-        res.end();
-        return null;
-      }
-      else if (credentials.name !== 'Souzooka' || credentials.pass !== 'secretPassword') {
-        res.writeHead(401, {
-          'Date'          : new Date().toUTCString(),
-          'Server'        : 'HackerSpace'
-        });
-        res.write(`Invalid password or username.`);
-        res.end();
-        return null;
-      }
-    }
 
     switch (method) {
       case 'GET': {
@@ -53,55 +30,61 @@ function requestHandler(req, res) {
         break;
       }
       case 'POST': {
-        fs.access(fileName, fs.constants.F_OK, (err) => {
-          if (err) {
-            ++elements;
-            writeNewFile(body);
-          } else {
-            res.writeHead(409, {
-            'Date'          : new Date().toUTCString(),
-            'Server'        : 'HackerSpace'
-            });
-            res.write('File already exists on server.');
-            res.end();
-          }
-        });
+        if (basicAuth(req, res).isAuthorized()) {
+          fs.access(fileName, fs.constants.F_OK, (err) => {
+            if (err) {
+              ++elements;
+              writeNewFile(body);
+            } else {
+              res.writeHead(409, {
+              'Date'          : new Date().toUTCString(),
+              'Server'        : 'HackerSpace'
+              });
+              res.write('File already exists on server.');
+              res.end();
+            }
+          });
+        }
         break;
       }
       case 'PUT': {
-        fs.access(fileName, fs.constants.F_OK, (err) => {
-          if (err) {
-            res.writeHead(409, {
-            'Date'          : new Date().toUTCString(),
-            'Server'        : 'HackerSpace'
-            });
-            res.write('File does not exist on server.');
-            res.end();
-          } else {
-            writeNewFile(body);
-          }
-        });
+        if (basicAuth(req, res).isAuthorized()) {
+          fs.access(fileName, fs.constants.F_OK, (err) => {
+            if (err) {
+              res.writeHead(409, {
+              'Date'          : new Date().toUTCString(),
+              'Server'        : 'HackerSpace'
+              });
+              res.write('File does not exist on server.');
+              res.end();
+            } else {
+              writeNewFile(body);
+            }
+          });
+        }
         break;
       }
       case 'DELETE': {
-        fs.unlink(fileName, (err) => {
-          if (err) {
-            res.writeHead(409, {
-            'Date'          : new Date().toUTCString(),
-            'Server'        : 'HackerSpace'
-            });
-            res.write('File does not exist on server.');
-            res.end();
-          }
-          console.log('The file has been deleted!');
-          --elements;
-          fs.readFile(fileName, 'utf8', (err, data) => {
+        if (basicAuth(req, res).isAuthorized()) {
+          fs.unlink(fileName, (err) => {
             if (err) {
-              console.log(err);
+              res.writeHead(409, {
+              'Date'          : new Date().toUTCString(),
+              'Server'        : 'HackerSpace'
+              });
+              res.write('File does not exist on server.');
+              res.end();
             }
-            deleteIndexElement(data, element);
+            console.log('The file has been deleted!');
+            --elements;
+            fs.readFile(fileName, 'utf8', (err, data) => {
+              if (err) {
+                console.log(err);
+              }
+              deleteIndexElement(data, element);
+            });
           });
-        });
+        }
         break;
       }
       case 'HEAD': {
@@ -123,9 +106,6 @@ function requestHandler(req, res) {
       }
     }
   });
-
-
-
 
   function writeNewFile(body) {
     const fileData = `<!DOCTYPE html>
