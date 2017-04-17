@@ -12,19 +12,15 @@ const server = http.createServer( (req, res) => {
     return fs.readFile(file, 'utf8', (err, data) => {
       if (err) {
         console.log(err);
-        notFound();
+        fs.readFile('public/404.html', 'utf8', (err, data) => {
+          if (err) {
+            console.log(err);
+          }
+          sendGETResponse(data, 404);
+        });
       } else {
         sendGETResponse(data);
       }
-    });
-  }
-
-  function notFound() {
-    fs.readFile('public/404.html', 'utf8', (err, data) => {
-      if (err) {
-        console.log(err);
-      }
-      sendGETResponse(data, 404);
     });
   }
 
@@ -96,7 +92,6 @@ const server = http.createServer( (req, res) => {
   }
 
   function writeNewFile(fileName, fileData) {
-
     fs.writeFile(fileName, fileData, (err) => {
       if (err) throw err;
       console.log('The file has been saved!');
@@ -106,7 +101,6 @@ const server = http.createServer( (req, res) => {
   }
 
   function deleteFile(body) {
-    console.log('test')
     const fileName = `public/${body.elementName}.html`;
     fs.unlink(fileName, (err) => {
       if (err) {
@@ -144,11 +138,10 @@ const server = http.createServer( (req, res) => {
     data = data.toString();
     endOfListIndex = data.indexOf('</ol>');
     data = `${data.substr(0, endOfListIndex)}\
-  <li>
+    <li id='${element}'>
       <a href="/${element}.html">${element.charAt(0).toUpperCase() + element.slice(1)}</a>
     </li>
     ${data.substr(endOfListIndex)}`;
-
     h3Index = data.indexOf('<h3>') + 4;
     h3EndIndex = data.indexOf('</h3>');
     data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
@@ -161,10 +154,16 @@ const server = http.createServer( (req, res) => {
   }
 
   function deleteIndexElement(data, element) {
+
     data = data.toString();
     h3Index = data.indexOf('<h3>') + 4;
     h3EndIndex = data.indexOf('</h3>');
     data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
+    liIndex = data.indexOf(`<li id='${element}'>`);
+    endOfListIndex = data.indexOf('</li>', liIndex) + 10;
+    console.log(liIndex);
+    console.log(endOfListIndex)
+    data = data.slice(0, liIndex) + data.slice(endOfListIndex);
     fs.writeFile('public/index.html', data, (err) => {
       if (err) throw err;
       res.writeHead(200);
@@ -177,9 +176,7 @@ const server = http.createServer( (req, res) => {
   const httpVersion = 'HTTP' + req.httpVersion;
   var body = [];
 
-
   let path = 'public' + req.url;
-
   if (path === 'public/') {
     path = 'public/index.html';
   }
