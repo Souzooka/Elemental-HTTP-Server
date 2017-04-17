@@ -3,6 +3,7 @@ const net = require('net');
 const fs = require('fs');
 const http = require('http');
 const querystring = require('querystring');
+var auth = require('basic-auth');
 
 let elements = 2;
 const server = http.createServer( (req, res) => {
@@ -64,7 +65,7 @@ const server = http.createServer( (req, res) => {
   }
 
   function putFile(body) {
-    const fileData = `<!DOCTYPE html>
+  const fileData = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -154,16 +155,16 @@ const server = http.createServer( (req, res) => {
   }
 
   function deleteIndexElement(data, element) {
-
     data = data.toString();
-    h3Index = data.indexOf('<h3>') + 4;
-    h3EndIndex = data.indexOf('</h3>');
+
+    let h3Index = data.indexOf('<h3>') + 4;
+    let h3EndIndex = data.indexOf('</h3>');
+    let liIndex = data.indexOf(`<li id='${element}'>`);
+    let endOfListIndex = data.indexOf('</li>', liIndex) + 10;
+
     data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
-    liIndex = data.indexOf(`<li id='${element}'>`);
-    endOfListIndex = data.indexOf('</li>', liIndex) + 10;
-    console.log(liIndex);
-    console.log(endOfListIndex)
     data = data.slice(0, liIndex) + data.slice(endOfListIndex);
+
     fs.writeFile('public/index.html', data, (err) => {
       if (err) throw err;
       res.writeHead(200);
@@ -181,16 +182,23 @@ const server = http.createServer( (req, res) => {
     path = 'public/index.html';
   }
 
-  req.on('error', function(err) {
-    console.error(err);
-  });
-
   req.on('data', function(chunk) {
     body.push(chunk);
   });
 
   req.on('end', () => {
     body = querystring.parse(Buffer.concat(body).toString());
+    const credentials = auth(req);
+    if (!credentials || credentials.name !== 'Souzooka' || credentials.pass !== 'secretPassword') {
+      if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+        res.writeHead(401);
+        res.write(`This server is using authentication.
+
+Please provide a "username" and "password" key with your requests.`);
+        res.end();
+        return null;
+      }
+    }
     switch (method) {
       case 'GET': {
         generateGETResponse(path);
