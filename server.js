@@ -36,7 +36,7 @@ const server = http.createServer( (req, res) => {
     res.end();
   }
 
-  function postFile(body) {
+  function writeNewFile(body) {
     const fileData = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,50 +53,9 @@ const server = http.createServer( (req, res) => {
 </body>
 </html>`;
     const fileName = `public/${body.elementName}.html`;
-    fs.access(fileName, fs.constants.F_OK, (err) => {
-      if (err) {
-        writeNewFile(fileName, fileData);
-      } else {
-        res.writeHead(409);
-        res.write('File already exists on server.');
-        res.end();
-      }
-    });
-  }
-
-  function putFile(body) {
-  const fileData = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>The Elements - ${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</title>
-  <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body>
-  <h1>${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</h1>
-  <h2>${body.elementSymbol}</h2>
-  <h3>Atomic number ${body.elementAtomicNumber}</h3>
-  <p>${body.elementDescription}</p>
-  <p><a href="/">back</a></p>
-</body>
-</html>`;
-    const fileName = `public/${body.elementName}.html`;
-    fs.access(fileName, fs.constants.F_OK, (err) => {
-      if (err) {
-        res.writeHead(409);
-        res.write('File does not exist on server.');
-        res.end();
-      } else {
-        writeNewFile(fileName, fileData);
-      }
-    });
-  }
-
-  function writeNewFile(fileName, fileData) {
     fs.writeFile(fileName, fileData, (err) => {
       if (err) throw err;
       console.log('The file has been saved!');
-      ++elements;
       readIndex('add', body.elementName);
     });
   }
@@ -205,11 +164,28 @@ Please provide a "name" and "pass" key with your requests.`);
         break;
       }
       case 'POST': {
-        postFile(body);
+        fs.access(`public/${body.elementName}.html`, fs.constants.F_OK, (err) => {
+          if (err) {
+            ++elements;
+            writeNewFile(body);
+          } else {
+            res.writeHead(409);
+            res.write('File already exists on server.');
+            res.end();
+          }
+        });
         break;
       }
       case 'PUT': {
-        putFile(body);
+        fs.access(`public/${body.elementName}.html`, fs.constants.F_OK, (err) => {
+          if (err) {
+            res.writeHead(409);
+            res.write('File does not exist on server.');
+            res.end();
+          } else {
+            writeNewFile(body);
+          }
+        });
         break;
       }
       case 'DELETE': {
