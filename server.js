@@ -7,7 +7,6 @@ var auth = require('basic-auth');
 
 let elements = 2;
 const server = http.createServer( (req, res) => {
-
   const method = req.method;
   const httpVersion = 'HTTP' + req.httpVersion;
   var body = [];
@@ -74,7 +73,12 @@ Please provide a "name" and "pass" key with your requests.`);
           }
           console.log('The file has been deleted!');
           --elements;
-          readIndex('delete', body.elementName);
+          fs.readFile(fileName, 'utf8', (err, data) => {
+            if (err) {
+              console.log(err);
+            }
+            deleteIndexElement(data, element);
+          });
         });
         break;
       }
@@ -141,28 +145,13 @@ Please provide a "name" and "pass" key with your requests.`);
     fs.writeFile(fileName, fileData, (err) => {
       if (err) throw err;
       console.log('The file has been saved!');
-      readIndex('add', body.elementName);
-    });
-  }
-
-  function readIndex(method, element) {
-    const fileName = `public/index.html`;
-    if (method === 'add') {
       fs.readFile(fileName, 'utf8', (err, data) => {
         if (err) {
           console.log(err);
         }
         addIndexElement(data, element);
       });
-    }
-    else if (method === 'delete') {
-      fs.readFile(fileName, 'utf8', (err, data) => {
-        if (err) {
-          console.log(err);
-        }
-        deleteIndexElement(data, element);
-      });
-    }
+    });
   }
 
   function addIndexElement(data, element) {
@@ -198,7 +187,6 @@ Please provide a "name" and "pass" key with your requests.`);
 
     data = data.slice(0, liIndex) + data.slice(endOfListIndex);
     data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
-
 
     fs.writeFile('public/index.html', data, (err) => {
       if (err) throw err;
