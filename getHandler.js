@@ -1,7 +1,4 @@
-const net = require('net');
 const fs = require('fs');
-const http = require('http');
-const querystring = require('querystring');
 
 function getHandler(req, res) {
 
