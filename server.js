@@ -24,8 +24,8 @@ const server = http.createServer( (req, res) => {
     body = querystring.parse(Buffer.concat(body).toString());
     const credentials = auth(req);
     const fileName = `public/${body.elementName}.html`;
-    if (!credentials || credentials.name !== 'Souzooka' || credentials.pass !== 'secretPassword') {
-      if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+    if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+      if (!credentials) {
         res.writeHead(401, {
           'Date'          : new Date().toUTCString(),
           'Server'        : 'HackerSpace'
@@ -36,7 +36,17 @@ Please provide a "name" and "pass" key with your requests.`);
         res.end();
         return null;
       }
+      else if (credentials.name !== 'Souzooka' || credentials.pass !== 'secretPassword') {
+        res.writeHead(401, {
+          'Date'          : new Date().toUTCString(),
+          'Server'        : 'HackerSpace'
+        });
+        res.write(`Invalid password or username.`);
+        res.end();
+        return null;
+      }
     }
+
     switch (method) {
       case 'GET': {
         generateGETResponse(path);
@@ -167,7 +177,7 @@ Please provide a "name" and "pass" key with your requests.`);
         if (err) {
           console.log(err);
         }
-        addIndexElement(data, element);
+        addIndexElement(data, body.elementName);
       });
     });
   }
