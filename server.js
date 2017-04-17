@@ -8,6 +8,91 @@ var auth = require('basic-auth');
 let elements = 2;
 const server = http.createServer( (req, res) => {
 
+  const method = req.method;
+  const httpVersion = 'HTTP' + req.httpVersion;
+  var body = [];
+
+  let path = 'public' + req.url;
+  if (path === 'public/') {
+    path = 'public/index.html';
+  }
+
+  req.on('data', function(chunk) {
+    body.push(chunk);
+  });
+
+  req.on('end', () => {
+    body = querystring.parse(Buffer.concat(body).toString());
+    const credentials = auth(req);
+    const fileName = `public/${body.elementName}.html`;
+    if (!credentials || credentials.name !== 'Souzooka' || credentials.pass !== 'secretPassword') {
+      if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+        res.writeHead(401);
+        res.write(`This server is using authentication.
+
+Please provide a "name" and "pass" key with your requests.`);
+        res.end();
+        return null;
+      }
+    }
+    switch (method) {
+      case 'GET': {
+        generateGETResponse(path);
+        break;
+      }
+      case 'POST': {
+        fs.access(fileName, fs.constants.F_OK, (err) => {
+          if (err) {
+            ++elements;
+            writeNewFile(body);
+          } else {
+            res.writeHead(409);
+            res.write('File already exists on server.');
+            res.end();
+          }
+        });
+        break;
+      }
+      case 'PUT': {
+        fs.access(fileName, fs.constants.F_OK, (err) => {
+          if (err) {
+            res.writeHead(409);
+            res.write('File does not exist on server.');
+            res.end();
+          } else {
+            writeNewFile(body);
+          }
+        });
+        break;
+      }
+      case 'DELETE': {
+        fs.unlink(fileName, (err) => {
+          if (err) {
+            res.writeHead(409);
+            res.write('File does not exist on server.');
+            res.end();
+          }
+          console.log('The file has been deleted!');
+          --elements;
+          readIndex('delete', body.elementName);
+        });
+        break;
+      }
+      case 'HEADERS': {
+        res.writeHead(200);
+        res.end();
+        break;
+      }
+      case 'OPTIONS': {
+        res.writeHead(200);
+        res.write('GET, POST, PUT, DELETE, HEADERS');
+        res.end();
+        break;
+      }
+    }
+  });
+
+
   function generateGETResponse(file) {
     var fileData = '';
     return fs.readFile(file, 'utf8', (err, data) => {
@@ -60,20 +145,6 @@ const server = http.createServer( (req, res) => {
     });
   }
 
-  function deleteFile(body) {
-    const fileName = `public/${body.elementName}.html`;
-    fs.unlink(fileName, (err) => {
-      if (err) {
-        res.writeHead(409);
-        res.write('File does not exist on server.');
-        res.end();
-      }
-      console.log('The file has been deleted!');
-      --elements;
-      readIndex('delete', body.elementName);
-    });
-  }
-
   function readIndex(method, element) {
     const fileName = `public/index.html`;
     if (method === 'add') {
@@ -96,17 +167,21 @@ const server = http.createServer( (req, res) => {
 
   function addIndexElement(data, element) {
     data = data.toString();
-    endOfListIndex = data.indexOf('</ol>');
+    let h3Index = data.indexOf('<h3>') + 4;
+    let h3EndIndex = data.indexOf('</h3>');
+    let endOfListIndex = data.indexOf('</ol>');
+
     data = `${data.substr(0, endOfListIndex)}\
     <li id='${element}'>
       <a href="/${element}.html">${element.charAt(0).toUpperCase() + element.slice(1)}</a>
     </li>
     ${data.substr(endOfListIndex)}`;
-    h3Index = data.indexOf('<h3>') + 4;
-    h3EndIndex = data.indexOf('</h3>');
     data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
+
     fs.writeFile('public/index.html', data, (err) => {
-      if (err) throw err;
+      if (err) {
+        console.log(err);
+      }
       res.writeHead(200);
       res.write('File has been successfully saved.');
       res.end();
@@ -121,8 +196,9 @@ const server = http.createServer( (req, res) => {
     let liIndex = data.indexOf(`<li id='${element}'>`);
     let endOfListIndex = data.indexOf('</li>', liIndex) + 10;
 
-    data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
     data = data.slice(0, liIndex) + data.slice(endOfListIndex);
+    data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
+
 
     fs.writeFile('public/index.html', data, (err) => {
       if (err) throw err;
@@ -131,80 +207,6 @@ const server = http.createServer( (req, res) => {
       res.end();
     });
   }
-
-  const method = req.method;
-  const httpVersion = 'HTTP' + req.httpVersion;
-  var body = [];
-
-  let path = 'public' + req.url;
-  if (path === 'public/') {
-    path = 'public/index.html';
-  }
-
-  req.on('data', function(chunk) {
-    body.push(chunk);
-  });
-
-  req.on('end', () => {
-    body = querystring.parse(Buffer.concat(body).toString());
-    const credentials = auth(req);
-    if (!credentials || credentials.name !== 'Souzooka' || credentials.pass !== 'secretPassword') {
-      if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-        res.writeHead(401);
-        res.write(`This server is using authentication.
-
-Please provide a "name" and "pass" key with your requests.`);
-        res.end();
-        return null;
-      }
-    }
-    switch (method) {
-      case 'GET': {
-        generateGETResponse(path);
-        break;
-      }
-      case 'POST': {
-        fs.access(`public/${body.elementName}.html`, fs.constants.F_OK, (err) => {
-          if (err) {
-            ++elements;
-            writeNewFile(body);
-          } else {
-            res.writeHead(409);
-            res.write('File already exists on server.');
-            res.end();
-          }
-        });
-        break;
-      }
-      case 'PUT': {
-        fs.access(`public/${body.elementName}.html`, fs.constants.F_OK, (err) => {
-          if (err) {
-            res.writeHead(409);
-            res.write('File does not exist on server.');
-            res.end();
-          } else {
-            writeNewFile(body);
-          }
-        });
-        break;
-      }
-      case 'DELETE': {
-        deleteFile(body);
-        break;
-      }
-      case 'HEADERS': {
-        res.writeHead(200);
-        res.end();
-        break;
-      }
-      case 'OPTIONS': {
-        res.writeHead(200);
-        res.write('GET, POST, PUT, DELETE, HEADERS');
-        res.end();
-        break;
-      }
-    }
-  });
 });
 
 server.listen(8080);
