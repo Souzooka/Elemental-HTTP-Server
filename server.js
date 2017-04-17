@@ -26,7 +26,10 @@ const server = http.createServer( (req, res) => {
     const fileName = `public/${body.elementName}.html`;
     if (!credentials || credentials.name !== 'Souzooka' || credentials.pass !== 'secretPassword') {
       if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-        res.writeHead(401);
+        res.writeHead(401, {
+          'Date'          : new Date().toUTCString(),
+          'Server'        : 'HackerSpace'
+        });
         res.write(`This server is using authentication.
 
 Please provide a "name" and "pass" key with your requests.`);
@@ -45,7 +48,10 @@ Please provide a "name" and "pass" key with your requests.`);
             ++elements;
             writeNewFile(body);
           } else {
-            res.writeHead(409);
+            res.writeHead(409, {
+            'Date'          : new Date().toUTCString(),
+            'Server'        : 'HackerSpace'
+            });
             res.write('File already exists on server.');
             res.end();
           }
@@ -55,7 +61,10 @@ Please provide a "name" and "pass" key with your requests.`);
       case 'PUT': {
         fs.access(fileName, fs.constants.F_OK, (err) => {
           if (err) {
-            res.writeHead(409);
+            res.writeHead(409, {
+            'Date'          : new Date().toUTCString(),
+            'Server'        : 'HackerSpace'
+            });
             res.write('File does not exist on server.');
             res.end();
           } else {
@@ -67,7 +76,10 @@ Please provide a "name" and "pass" key with your requests.`);
       case 'DELETE': {
         fs.unlink(fileName, (err) => {
           if (err) {
-            res.writeHead(409);
+            res.writeHead(409, {
+            'Date'          : new Date().toUTCString(),
+            'Server'        : 'HackerSpace'
+            });
             res.write('File does not exist on server.');
             res.end();
           }
@@ -83,12 +95,18 @@ Please provide a "name" and "pass" key with your requests.`);
         break;
       }
       case 'HEADERS': {
-        res.writeHead(200);
+        res.writeHead(200, {
+          'Date'          : new Date().toUTCString(),
+          'Server'        : 'HackerSpace'
+        });
         res.end();
         break;
       }
       case 'OPTIONS': {
-        res.writeHead(200);
+        res.writeHead(200, {
+          'Date'          : new Date().toUTCString(),
+          'Server'        : 'HackerSpace'
+        });
         res.write('GET, POST, PUT, DELETE, HEADERS');
         res.end();
         break;
@@ -171,7 +189,10 @@ Please provide a "name" and "pass" key with your requests.`);
       if (err) {
         console.log(err);
       }
-      res.writeHead(200);
+      res.writeHead(200, {
+        'Date'          : new Date().toUTCString(),
+        'Server'        : 'HackerSpace'
+      });
       res.write('File has been successfully saved.');
       res.end();
     });
@@ -183,14 +204,19 @@ Please provide a "name" and "pass" key with your requests.`);
     let h3Index = data.indexOf('<h3>') + 4;
     let h3EndIndex = data.indexOf('</h3>');
     let liIndex = data.indexOf(`<li id='${element}'>`);
-    let endOfListIndex = data.indexOf('</li>', liIndex) + 10;
+    let endOfListIndex = data.indexOf('</li>', liIndex) + 5;
 
     data = data.slice(0, liIndex) + data.slice(endOfListIndex);
     data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
 
     fs.writeFile('public/index.html', data, (err) => {
-      if (err) throw err;
-      res.writeHead(200);
+      if (err) {
+        console.log(err);
+      }
+      res.writeHead(200, {
+        'Date'          : new Date().toUTCString(),
+        'Server'        : 'HackerSpace'
+      });
       res.write('File has been successfully deleted.');
       res.end();
     });
