@@ -194,7 +194,7 @@ const server = http.createServer( (req, res) => {
         res.writeHead(401);
         res.write(`This server is using authentication.
 
-Please provide a "username" and "password" key with your requests.`);
+Please provide a "name" and "pass" key with your requests.`);
         res.end();
         return null;
       }
