@@ -31,7 +31,7 @@ function getHandler(req, res) {
   });
 
   function sendGETResponse(data, status = 200) {
-    res.writeHead(200, {
+    res.writeHead(status, {
       'Content-Type'  : `text/${fileExtension}`,
       'Content-Length': data.length,
       'Date'          : new Date().toUTCString(),
