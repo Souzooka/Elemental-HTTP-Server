@@ -8,14 +8,15 @@ const basicAuth = require('./basicAuth.js');
 
 function requestHandler(req, res) {
 
-  let body = [];
+  let body = '';
 
   req.on('data', function(chunk) {
-    body.push(chunk);
+    body += chunk;
   });
 
   req.on('end', () => {
-    body = querystring.parse(Buffer.concat(body).toString());
+    // convert our body data string to an object
+    body = querystring.parse(body);
 
     switch (req.method) {
       case 'GET': {
