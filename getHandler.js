@@ -7,6 +7,7 @@ function getHandler(req, res) {
   if (file === 'public/') {
     file = 'public/index.html';
   }
+  let fileExtension = file.slice(file.indexOf('.')+1);
 
   fs.readFile(file, 'utf8', (err, data) => {
     if (err) {
@@ -24,7 +25,7 @@ function getHandler(req, res) {
 
   function sendGETResponse(data, status = 200) {
     res.writeHead(200, {
-      'Content-Type'  : 'text/html',
+      'Content-Type'  : `text/${fileExtension}`,
       'Content-Length': data.length,
       'Date'          : new Date().toUTCString(),
       'Server'        : 'HackerSpace'
