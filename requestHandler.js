@@ -57,6 +57,14 @@ function requestHandler(req, res) {
         res.end();
         break;
       }
+      default: {
+        res.writeHead(400, {
+          'Date'          : new Date().toUTCString(),
+          'Server'        : 'HackerSpace'
+        });
+        res.write('Unsupported method or malformed request.');
+        res.end();
+      }
     }
   });
 }
