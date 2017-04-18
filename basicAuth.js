@@ -4,10 +4,8 @@ function basicAuth(req, res) {
 
   const auth = require('basic-auth');
   const credentials = auth(req);
-  console.log(credentials);
   const username = 'Souzooka';
   const password = 'secretPassword';
-
 
   // return values:
   // true if user has correct credentials

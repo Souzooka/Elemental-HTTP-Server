@@ -1,20 +1,13 @@
 /*jshint esversion:6*/
 function requestHandler(req, res) {
-  const net = require('net');
-  const fs = require('fs');
-  const http = require('http');
   const querystring = require('querystring');
   const getHandler = require('./getHandler.js');
+  const postHandler = require('./postHandler.js');
+  const putHandler = require('./putHandler.js');
   const basicAuth = require('./basicAuth.js');
 
   const method = req.method;
-  const httpVersion = 'HTTP' + req.httpVersion;
-  var body = [];
-
-  let path = 'public' + req.url;
-  if (path === 'public/') {
-    path = 'public/index.html';
-  }
+  let body = [];
 
   req.on('data', function(chunk) {
     body.push(chunk);
@@ -22,7 +15,6 @@ function requestHandler(req, res) {
 
   req.on('end', () => {
     body = querystring.parse(Buffer.concat(body).toString());
-    const fileName = `public/${body.elementName}.html`;
 
     switch (method) {
       case 'GET': {
@@ -31,59 +23,19 @@ function requestHandler(req, res) {
       }
       case 'POST': {
         if (basicAuth(req, res).isAuthorized()) {
-          fs.access(fileName, fs.constants.F_OK, (err) => {
-            if (err) {
-              ++elements;
-              writeNewFile(body);
-            } else {
-              res.writeHead(409, {
-              'Date'          : new Date().toUTCString(),
-              'Server'        : 'HackerSpace'
-              });
-              res.write('File already exists on server.');
-              res.end();
-            }
-          });
+          postHandler(req, res, body);
         }
         break;
       }
       case 'PUT': {
         if (basicAuth(req, res).isAuthorized()) {
-          fs.access(fileName, fs.constants.F_OK, (err) => {
-            if (err) {
-              res.writeHead(409, {
-              'Date'          : new Date().toUTCString(),
-              'Server'        : 'HackerSpace'
-              });
-              res.write('File does not exist on server.');
-              res.end();
-            } else {
-              writeNewFile(body);
-            }
-          });
+          putHandler(req, res, body);
         }
         break;
       }
       case 'DELETE': {
         if (basicAuth(req, res).isAuthorized()) {
-          fs.unlink(fileName, (err) => {
-            if (err) {
-              res.writeHead(409, {
-              'Date'          : new Date().toUTCString(),
-              'Server'        : 'HackerSpace'
-              });
-              res.write('File does not exist on server.');
-              res.end();
-            }
-            console.log('The file has been deleted!');
-            --elements;
-            fs.readFile(fileName, 'utf8', (err, data) => {
-              if (err) {
-                console.log(err);
-              }
-              deleteIndexElement(data, element);
-            });
-          });
+          deleteHandler(req, res, body);
         }
         break;
       }
@@ -106,85 +58,6 @@ function requestHandler(req, res) {
       }
     }
   });
-
-  function writeNewFile(body) {
-    const fileData = `<!DOCTYPE html>
-  <html lang="en">
-  <head>
-  <meta charset="UTF-8">
-  <title>The Elements - ${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</title>
-  <link rel="stylesheet" href="/css/styles.css">
-  </head>
-  <body>
-  <h1>${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</h1>
-  <h2>${body.elementSymbol}</h2>
-  <h3>Atomic number ${body.elementAtomicNumber}</h3>
-  <p>${body.elementDescription}</p>
-  <p><a href="/">back</a></p>
-  </body>
-  </html>`;
-    const fileName = `public/${body.elementName}.html`;
-    fs.writeFile(fileName, fileData, (err) => {
-      if (err) throw err;
-      console.log('The file has been saved!');
-      fs.readFile(fileName, 'utf8', (err, data) => {
-        if (err) {
-          console.log(err);
-        }
-        addIndexElement(data, body.elementName);
-      });
-    });
-  }
-
-  function addIndexElement(data, element) {
-    data = data.toString();
-    let h3Index = data.indexOf('<h3>') + 4;
-    let h3EndIndex = data.indexOf('</h3>');
-    let endOfListIndex = data.indexOf('</ol>');
-
-    data = `${data.substr(0, endOfListIndex)}\
-    <li id='${element}'>
-      <a href="/${element}.html">${element.charAt(0).toUpperCase() + element.slice(1)}</a>
-    </li>
-    ${data.substr(endOfListIndex)}`;
-    data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
-
-    fs.writeFile('public/index.html', data, (err) => {
-      if (err) {
-        console.log(err);
-      }
-      res.writeHead(200, {
-        'Date'          : new Date().toUTCString(),
-        'Server'        : 'HackerSpace'
-      });
-      res.write('File has been successfully saved.');
-      res.end();
-    });
-  }
-
-  function deleteIndexElement(data, element) {
-    data = data.toString();
-
-    let h3Index = data.indexOf('<h3>') + 4;
-    let h3EndIndex = data.indexOf('</h3>');
-    let liIndex = data.indexOf(`<li id='${element}'>`);
-    let endOfListIndex = data.indexOf('</li>', liIndex) + 5;
-
-    data = data.slice(0, liIndex) + data.slice(endOfListIndex);
-    data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
-
-    fs.writeFile('public/index.html', data, (err) => {
-      if (err) {
-        console.log(err);
-      }
-      res.writeHead(200, {
-        'Date'          : new Date().toUTCString(),
-        'Server'        : 'HackerSpace'
-      });
-      res.write('File has been successfully deleted.');
-      res.end();
-    });
-  }
 }
 
 module.exports = requestHandler;
