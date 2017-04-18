@@ -24,17 +24,26 @@ function deleteHandler(req, res, body) {
     function deleteIndexElement(data, element) {
       data = data.toString();
 
-      let h3Index = data.indexOf('<h3>') + 4;
-      let h3EndIndex = data.indexOf('</h3>');
-      let liIndex = data.indexOf(`<li id='${element}'>`);
+      let liIndex = data.indexOf(`<li id="${body.elementName}">`);
       let endOfListIndex = data.indexOf('</li>', liIndex) + 5;
+      let elementsCountIndex = data.indexOf('id="elements-count"');
+      elementsCountIndex = data.indexOf('>', elementsCountIndex) + 1;
+      let elementsCountIndexEnd = data.indexOf('</', elementsCountIndex);
+      let elementsCount = data.slice(elementsCountIndex, elementsCountIndexEnd);
+      --elementsCount;
 
       data = data.slice(0, liIndex) + data.slice(endOfListIndex);
-      data = `${data.substr(0, h3Index)}There are ${elements}${data.substr(h3EndIndex)}`;
+      // Update count of elements
+      data = `${data.substr(0, elementsCountIndex)}${elementsCount}${data.substr(elementsCountIndexEnd)}`;
 
       fs.writeFile('public/index.html', data, (err) => {
         if (err) {
-          console.log(err);
+          res.writeHead(500, {
+          'Date'          : new Date().toUTCString(),
+          'Server'        : 'HackerSpace'
+          });
+          res.write('Server error.');
+          res.end();
         }
         res.writeHead(200, {
           'Date'          : new Date().toUTCString(),
