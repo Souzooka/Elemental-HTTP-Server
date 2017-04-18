@@ -21,7 +21,12 @@ function getHandler(req, res) {
       console.log(err);
       fs.readFile('public/404.html', 'utf8', (err, data) => {
         if (err) {
-          console.log(err);
+          res.writeHead(500, {
+          'Date'          : new Date().toUTCString(),
+          'Server'        : 'HackerSpace'
+          });
+          res.write('Server error -- public/404.html not found');
+          res.end();
         }
         sendGETResponse(data, 404);
       });
