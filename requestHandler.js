@@ -4,6 +4,7 @@ function requestHandler(req, res) {
   const getHandler = require('./getHandler.js');
   const postHandler = require('./postHandler.js');
   const putHandler = require('./putHandler.js');
+  const deleteHandler = require('./deleteHandler.js');
   const basicAuth = require('./basicAuth.js');
 
   const method = req.method;

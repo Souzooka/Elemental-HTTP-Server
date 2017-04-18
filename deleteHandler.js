@@ -1,4 +1,8 @@
+/*jshint esversion:6*/
+const fs = require('fs');
+
 function deleteHandler(req, res, body) {
+  const fileName = `public/elements/${body.elementName}.html`;
 
   fs.unlink(fileName, (err) => {
     if (err) {
@@ -9,7 +13,7 @@ function deleteHandler(req, res, body) {
       res.write('File does not exist on server.');
       res.end();
     }
-    fs.readFile(fileName, 'utf8', (err, data) => {
+    fs.readFile(`public/index.html`, 'utf8', (err, data) => {
       if (err) {
         res.writeHead(500, {
           'Date'          : new Date().toUTCString(),
@@ -55,3 +59,5 @@ function deleteHandler(req, res, body) {
     }
   });
 }
+
+module.exports = deleteHandler;
