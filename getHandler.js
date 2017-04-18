@@ -5,8 +5,15 @@ function getHandler(req, res) {
 
   let file = 'public' + req.url;
   if (file === 'public/') {
-    file = 'public/index.html';
+    file = 'public/index';
   }
+
+  // if a file extension is not specified, assume it is .html
+  if (file.indexOf('.') === -1) {
+    file += '.html';
+  }
+
+  // grab the file extension for later use
   let fileExtension = file.slice(file.indexOf('.')+1);
 
   fs.readFile(file, 'utf8', (err, data) => {
