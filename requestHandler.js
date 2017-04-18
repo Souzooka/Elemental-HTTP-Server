@@ -1,13 +1,13 @@
 /*jshint esversion:6*/
-function requestHandler(req, res) {
-  const querystring = require('querystring');
-  const getHandler = require('./getHandler.js');
-  const postHandler = require('./postHandler.js');
-  const putHandler = require('./putHandler.js');
-  const deleteHandler = require('./deleteHandler.js');
-  const basicAuth = require('./basicAuth.js');
+const querystring = require('querystring');
+const getHandler = require('./getHandler.js');
+const postHandler = require('./postHandler.js');
+const putHandler = require('./putHandler.js');
+const deleteHandler = require('./deleteHandler.js');
+const basicAuth = require('./basicAuth.js');
 
-  const method = req.method;
+function requestHandler(req, res) {
+
   let body = [];
 
   req.on('data', function(chunk) {
@@ -17,7 +17,7 @@ function requestHandler(req, res) {
   req.on('end', () => {
     body = querystring.parse(Buffer.concat(body).toString());
 
-    switch (method) {
+    switch (req.method) {
       case 'GET': {
         getHandler(req, res);
         break;
