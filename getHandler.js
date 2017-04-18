@@ -27,6 +27,7 @@ function getHandler(req, res) {
           });
           res.write('Server error -- public/404.html not found');
           res.end();
+          return null;
         }
         sendGETResponse(data, 404);
       });
