@@ -1,12 +1,31 @@
 /*jshint esversion:6*/
 const fs = require('fs');
+const templateBuilder = require('./templateBuilder.js');
 
 function postHandler(req, res, body) {
-  const fileName = `public/elements/${body.elementName}.html`;
+  const newFileName = `public/elements/${body.elementName}.html`;
+  const elementTemplatePath = 'templates/elementTemplate.html';
+  const indexPath = 'public/index.html';
 
-  fs.access(fileName, fs.constants.F_OK, (err) => {
+  fs.access(newFileName, fs.constants.F_OK, (err) => {
     if (err) {
-      writeNewFile();
+      fs.readFile(elementTemplatePath, 'utf8', (err, data) => {
+        if (err) {
+          return serverError();
+        }
+        const fileData = templateBuilder(body, data);
+        fs.writeFile(newFileName, fileData, (err) => {
+          if (err) {
+              return serverError();
+            }
+          fs.readFile(indexPath, 'utf8', (err, data) => {
+            if (err) {
+              return serverError();
+            }
+            addIndexElement(data, body.elementName);
+          });
+        });
+      });
     } else {
       res.writeHead(409, {
       'Date'          : new Date().toUTCString(),
@@ -17,43 +36,13 @@ function postHandler(req, res, body) {
     }
   });
 
-  function writeNewFile() {
-    const fileData = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>The Elements - ${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</title>
-<link rel="stylesheet" href="/css/styles.css">
-</head>
-<body>
-<h1>${body.elementName.charAt(0).toUpperCase() + body.elementName.slice(1)}</h1>
-<h2>${body.elementSymbol}</h2>
-<h3>Atomic number ${body.elementAtomicNumber}</h3>
-<p>${body.elementDescription}</p>
-<p><a href="/">back</a></p>
-</body>
-</html>`;
-    fs.writeFile(fileName, fileData, (err) => {
-      if (err) {
-          res.writeHead(500, {
-          'Date'          : new Date().toUTCString(),
-          'Server'        : 'HackerSpace'
-          });
-          res.write('Server error.');
-          res.end();
-        }
-      fs.readFile('public/index.html', 'utf8', (err, data) => {
-        if (err) {
-          res.writeHead(500, {
-          'Date'          : new Date().toUTCString(),
-          'Server'        : 'HackerSpace'
-          });
-          res.write('Server error.');
-          res.end();
-        }
-        addIndexElement(data, body.elementName);
-      });
+  function serverError(err = 'Server error.') {
+    res.writeHead(500, {
+    'Date'          : new Date().toUTCString(),
+    'Server'        : 'HackerSpace'
     });
+    res.write(err);
+    res.end();
   }
 
   function addIndexElement(data, element) {
